@@ -2,3 +2,8 @@
 # system-python-libs is HIGHLY EXPERIMENTAL according to upstream, and
 # still being worked on in Gentoo.
 >=www-client/librewolf-100.0 system-python-libs
+
+# Joonas Niilola <juippis@gentoo.org> (2024-02-20)
+# Upstream massively reworked av1 support breaking our custom
+# system-av1 patches.
+>=www-client/librewolf-123.0 system-av1
