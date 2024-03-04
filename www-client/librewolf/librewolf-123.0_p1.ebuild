@@ -3,9 +3,9 @@
 
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-122-patches-01.tar.xz"
+FIREFOX_PATCHSET="firefox-123-patches-03.tar.xz"
 
-LLVM_MAX_SLOT=17
+LLVM_COMPAT=( 16 17 )
 
 PYTHON_COMPAT=( python3_{10..11} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
@@ -41,7 +41,7 @@ MOZ_P="${MOZ_PN}-${MOZ_PV}"
 MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
 MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
-inherit autotools check-reqs desktop flag-o-matic gnome2-utils linux-info llvm multiprocessing \
+inherit autotools check-reqs desktop flag-o-matic gnome2-utils linux-info llvm-r1 multiprocessing \
 	optfeature pax-utils python-any-r1 readme.gentoo-r1 toolchain-funcs virtualx xdg
 
 MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases/${MOZ_PV}"
@@ -86,26 +86,15 @@ REQUIRED_USE="|| ( X wayland )
 
 FF_ONLY_DEPEND="selinux? ( sec-policy/selinux-mozilla )"
 BDEPEND="${PYTHON_DEPS}
-	|| (
-		(
-			sys-devel/clang:17
-			sys-devel/llvm:17
-			clang? (
-				sys-devel/lld:17
-				virtual/rust:0/llvm-17
-				pgo? ( =sys-libs/compiler-rt-sanitizers-17*[profile] )
-			)
+	$(llvm_gen_dep '
+		sys-devel/clang:${LLVM_SLOT}
+		sys-devel/llvm:${LLVM_SLOT}
+		clang? (
+			sys-devel/lld:${LLVM_SLOT}
+			virtual/rust:0/llvm-${LLVM_SLOT}
 		)
-		(
-			sys-devel/clang:16
-			sys-devel/llvm:16
-			clang? (
-				sys-devel/lld:16
-				virtual/rust:0/llvm-16
-				pgo? ( =sys-libs/compiler-rt-sanitizers-16*[profile] )
-			)
-		)
-	)
+		pgo? ( sys-libs/compiler-rt-sanitizers:${LLVM_SLOT}[profile] )
+	')
 	app-alternatives/awk
 	app-arch/unzip
 	app-arch/zip
@@ -137,7 +126,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.95
+	>=dev-libs/nss-3.97
 	>=dev-libs/nspr-4.35
 	media-libs/alsa-lib
 	media-libs/fontconfig
@@ -526,7 +515,7 @@ pkg_setup() {
 
 		check-reqs_pkg_setup
 
-		llvm_pkg_setup
+		llvm-r1_pkg_setup
 
 		if use clang && use lto && tc-ld-is-lld ; then
 			local version_lld=$(ld.lld --version 2>/dev/null | awk '{ print $2 }')
@@ -662,7 +651,7 @@ src_prepare() {
 
 	# Workaround for bgo#917599
 	if has_version ">=dev-libs/icu-74.1" && use system-icu ; then
-		eapply "${WORKDIR}"/firefox-patches/0026-bmo-1862601-system-icu-74.patch
+		eapply "${WORKDIR}"/firefox-patches/*-bmo-1862601-system-icu-74.patch
 	fi
 	rm -v "${WORKDIR}"/firefox-patches/*-bmo-1862601-system-icu-74.patch || die
 
@@ -853,8 +842,6 @@ src_configure() {
 		--disable-strip \
 		--disable-tests \
 		--disable-updater \
-		--disable-wasm-function-references \
-		--disable-wasm-gc \
 		--disable-wmf \
 		--enable-negotiateauth \
 		--enable-new-pass-manager \
@@ -1003,10 +990,15 @@ src_configure() {
 		mozconfig_add_options_ac '+x11' --enable-default-toolkit=cairo-gtk3-x11-only
 	fi
 
+	# LTO is handled via configure
+	filter-lto
+
 	if use lto ; then
 		if use clang ; then
 			# Upstream only supports lld or mold when using clang.
 			if tc-ld-is-mold ; then
+				# mold expects the -flto line from *FLAGS configuration, bgo#923119
+				append-ldflags "-flto=thin"
 				mozconfig_add_options_ac "using ld=mold due to system selection" --enable-linker=mold
 			else
 				mozconfig_add_options_ac "forcing ld=lld due to USE=clang and USE=lto" --enable-linker=lld
@@ -1047,9 +1039,6 @@ src_configure() {
 			fi
 		fi
 	fi
-
-	# LTO flag was handled via configure
-	filter-lto
 
 	mozconfig_use_enable debug
 	if use debug ; then
