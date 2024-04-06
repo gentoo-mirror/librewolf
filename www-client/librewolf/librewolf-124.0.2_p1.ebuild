@@ -3,11 +3,11 @@
 
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-123-patches-03.tar.xz"
+FIREFOX_PATCHSET="firefox-124-patches-03.tar.xz"
 
 LLVM_COMPAT=( 16 17 )
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..12} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -126,7 +126,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.97
+	>=dev-libs/nss-3.98
 	>=dev-libs/nspr-4.35
 	media-libs/alsa-lib
 	media-libs/fontconfig
@@ -463,8 +463,6 @@ virtwl() {
 	[[ -n $XDG_RUNTIME_DIR ]] || die "${FUNCNAME} needs XDG_RUNTIME_DIR to be set; try xdg_environment_reset"
 	tinywl -h >/dev/null || die 'tinywl -h failed'
 
-	# TODO: don't run addpredict in utility function. WLR_RENDERER=pixman doesn't work
-	addpredict /dev/dri
 	local VIRTWL VIRTWL_PID
 	coproc VIRTWL { WLR_BACKENDS=headless exec tinywl -s 'echo $WAYLAND_DISPLAY; read _; kill $PPID'; }
 	local -x WAYLAND_DISPLAY
@@ -560,34 +558,8 @@ pkg_setup() {
 			# (PORTAGE_SCHEDULING_POLICY) update...
 			addpredict /proc
 
-			# May need a wider addpredict when using wayland+pgo.
-			addpredict /dev/dri
-
-			# Allow access to GPU during PGO run
-			local ati_cards mesa_cards nvidia_cards render_cards
-			shopt -s nullglob
-
-			ati_cards=$(echo -n /dev/ati/card* | sed 's/ /:/g')
-			if [[ -n "${ati_cards}" ]] ; then
-				addpredict "${ati_cards}"
-			fi
-
-			mesa_cards=$(echo -n /dev/dri/card* | sed 's/ /:/g')
-			if [[ -n "${mesa_cards}" ]] ; then
-				addpredict "${mesa_cards}"
-			fi
-
-			nvidia_cards=$(echo -n /dev/nvidia* | sed 's/ /:/g')
-			if [[ -n "${nvidia_cards}" ]] ; then
-				addpredict "${nvidia_cards}"
-			fi
-
-			render_cards=$(echo -n /dev/dri/renderD128* | sed 's/ /:/g')
-			if [[ -n "${render_cards}" ]] ; then
-				addpredict "${render_cards}"
-			fi
-
-			shopt -u nullglob
+			# Clear tons of conditions, since PGO is hardware-dependant.
+			addpredict /dev
 		fi
 
 		if ! mountpoint -q /dev/shm ; then
@@ -1102,16 +1074,15 @@ src_configure() {
 	fi
 
 	# elf-hack
+	# Filter "-z,pack-relative-relocs" and let the build system handle it instead.
 	if use amd64 || use x86 ; then
+		filter-flags "-z,pack-relative-relocs"
+
 		if tc-ld-is-mold ; then
 			# relr-elf-hack is currently broken with mold, bgo#916259
 			mozconfig_add_options_ac 'disable elf-hack with mold linker' --disable-elf-hack
 		else
-			if use clang ; then
-				mozconfig_add_options_ac 'relr elf-hack with clang' --enable-elf-hack=relr
-			else
-				mozconfig_add_options_ac 'legacy elf-hack with gcc' --enable-elf-hack=legacy
-			fi
+			mozconfig_add_options_ac 'relr elf-hack' --enable-elf-hack=relr
 		fi
 	elif use ppc64 ; then
 		# '--disable-elf-hack' is not recognized on ppc64, bgo#917049
@@ -1142,6 +1113,9 @@ src_configure() {
 	if use valgrind; then
 		mozconfig_add_options_ac 'valgrind requirement' --disable-jemalloc
 	fi
+
+	# System-av1 fix
+	use system-av1 && append-ldflags "-Wl,--undefined-version"
 
 	# Allow elfhack to work in combination with unstripped binaries
 	# when they would normally be larger than 2GiB.
