@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -202,16 +202,6 @@ src_install() {
 
 	# local GENTOO_PREFS="${ED}${PREFS_DIR}/all-gentoo.js"
 
-	# if ! use gmp-autoupdate ; then
-	# 	local plugin
-	# 	for plugin in "${MOZ_GMP_PLUGIN_LIST[@]}" ; do
-	# 		einfo "Disabling auto-update for ${plugin} plugin ..."
-	# 		cat >>"${GENTOO_PREFS}" <<-EOF || die "failed to disable autoupdate for ${plugin} media plugin"
-	# 		pref("media.${plugin}.autoupdate",   false);
-	# 		EOF
-	# 	done
-	# fi
-
 	# Install language packs
 	local langpacks=( $(find "${WORKDIR}/language_packs" -type f -name '*.xpi') )
 	if [[ -n "${langpacks}" ]] ; then
@@ -274,7 +264,7 @@ src_install() {
 	# Update wrapper
 	sed -i \
 		-e "s:@PREFIX@:${EPREFIX}/usr:" \
-		-e "s:@MOZ_FIVE_HOME@:${MOZILLA_FIVE_HOME}:" \
+		-e "s:@MOZ_FIVE_HOME@:${EPREFIX}${MOZILLA_FIVE_HOME}:" \
 		-e "s:@APULSELIB_DIR@:${apulselib}:" \
 		-e "s:@DEFAULT_WAYLAND@:${use_wayland}:" \
 		"${ED}/usr/bin/${PN}" \
@@ -283,16 +273,6 @@ src_install() {
 
 pkg_postinst() {
 	xdg_pkg_postinst
-
-	# if ! use gmp-autoupdate ; then
-	# 	elog "USE='-gmp-autoupdate' has disabled the following plugins from updating or"
-	# 	elog "installing into new profiles:"
-	# 	local plugin
-	# 	for plugin in "${MOZ_GMP_PLUGIN_LIST[@]}" ; do
-	# 		elog "\t ${plugin}"
-	# 	done
-	# 	elog
-	# fi
 
 	use ffmpeg || ewarn "USE=-ffmpeg : HTML5 video will not render without media-video/ffmpeg installed"
 
