@@ -832,7 +832,6 @@ src_configure() {
 	# Librewolf
 	mozconfig_add_options_ac 'LibreWolf Branding' \
 		--with-app-name="librewolf" \
-		--with-app-basename="LibreWolf" \
 		--with-branding=browser/branding/librewolf
 
 	# I really have know idea if this is actually doing anything.
