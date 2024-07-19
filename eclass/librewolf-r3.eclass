@@ -28,7 +28,6 @@ ac_add_options --enable-rust-simd
 # Branding
 ac_add_options --enable-update-channel=release
 ac_add_options --with-app-name='${PN}'
-ac_add_options --with-app-basename='${_PN}'
 ac_add_options --with-branding=browser/branding/${PN}
 ac_add_options --with-distribution-id=io.gitlab.${PN}
 ac_add_options --with-unsigned-addon-scopes=app,system
