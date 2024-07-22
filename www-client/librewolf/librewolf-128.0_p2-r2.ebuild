@@ -3,7 +3,7 @@
 
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-128-patches-04.tar.xz"
+FIREFOX_PATCHSET="firefox-128-patches-05.tar.xz"
 
 LLVM_COMPAT=( 17 18 )
 
@@ -833,6 +833,7 @@ src_configure() {
 	mozconfig_add_options_ac 'LibreWolf Branding' \
 		--with-app-name="librewolf" \
 		--with-branding=browser/branding/librewolf
+	export MOZ_APP_REMOTINGNAME=LibreWolf
 
 	# I really have know idea if this is actually doing anything.
 	mozconfig_add_options_ac 'LibreWolf Localization' \
