@@ -604,6 +604,9 @@ src_unpack() {
 }
 
 src_prepare() {
+	# LibreWolf already has this
+	rm -v "${WORKDIR}"/firefox-patches/0026-bmo-1898476-nvidia-wayland-egl-sync.patch || die
+
 	if use lto; then
 		rm -v "${WORKDIR}"/firefox-patches/*-LTO-Only-enable-LTO-*.patch || die
 	fi
