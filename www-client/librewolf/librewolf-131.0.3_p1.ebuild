@@ -795,7 +795,7 @@ src_configure() {
 
 	# I really have know idea if this is actually doing anything.
 	mozconfig_add_options_ac 'LibreWolf Localization' \
-		--with-l10n-base=$PWD/browser/locales/l10n
+		--with-l10n-base=$PWD/lw/l10n
 
 	## Controlled via 'telemetry' IUSE
 	# mozconfig_add_options_mk 'LibreWolf Disable Telemetry' \
