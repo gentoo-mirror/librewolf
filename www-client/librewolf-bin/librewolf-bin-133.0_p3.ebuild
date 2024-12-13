@@ -48,6 +48,10 @@ RESTRICT="strip"
 
 BDEPEND="app-arch/unzip"
 RDEPEND="${DEPEND}
+	|| (
+		media-libs/libpulse
+		media-sound/apulse
+	)
 	>=app-accessibility/at-spi2-core-2.46.0:2
 	>=dev-libs/glib-2.26:2
 	media-libs/alsa-lib
@@ -69,10 +73,6 @@ RDEPEND="${DEPEND}
 	x11-libs/libXrender
 	x11-libs/libxcb
 	>=x11-libs/pango-1.22.0
-	alsa? (
-		!pulseaudio? ( media-sound/apulse )
-	)
-	pulseaudio? ( media-libs/libpulse )
 	selinux? ( sec-policy/selinux-mozilla )
 "
 
@@ -239,10 +239,15 @@ src_install() {
 	cp "${desktop_file}" "${WORKDIR}/${PN}.desktop-template" || die
 
 	# Add apulse support through our wrapper shell launcher, patchelf-method broken since 119.0.
-	# See bgo#916230
+	# See bgo#916230, bgo#941873
 	local apulselib=
-	if use alsa && ! use pulseaudio ; then
+	if has_version -r media-sound/apulse[-sdk] ; then
 		apulselib="${EPREFIX}/usr/$(get_libdir)/apulse"
+		ewarn "media-sound/apulse with -sdk use flag detected!"
+		ewarn "Firefox-bin will be installed with a wrapper, that attempts to load"
+		ewarn "apulse instead of pipewire/pulseadio. This may lead to sound issues."
+		ewarn "Please either enable sdk use flag for apulse, or remove apulse"
+		ewarn "completely and re-install firefox-bin to utilize pipewire/pulseaudio instead."
 	fi
 
 	sed -i \
