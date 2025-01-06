@@ -1,0 +1,7 @@
+# Copyright 1999-2024 Gentoo Authors.
+# Distributed under the terms of the GNU General Public License v2
+
+# Force system-libevent use flag on mozilla packages, since the building of
+# bundled libevent cannot accomodate a system without sysctl.h
+# See bug 574830 for more info.
+>=www-client/librewolf-45.0 system-libevent
