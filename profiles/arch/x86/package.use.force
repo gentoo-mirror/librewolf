@@ -1,0 +1,8 @@
+# Copyright 1999-2024 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+# Joonas Niilola <juippis@gentoo.org> (2022-05-19)
+# Bundled libvpx results in a failure, force the system-libvpx to be
+# used. bmo#1768145. Confirmed on librewolf-91 and librewolf-100.0.
+# (And on thunderbird-91)
+www-client/librewolf system-libvpx
