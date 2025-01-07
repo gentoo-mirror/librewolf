@@ -1,0 +1,6 @@
+# Copyright 1999-2024 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+# Thomas Deutschmann <whissi@gentoo.org> (2018-10-23)
+# requires net-libs/nodejs
+>=www-client/librewolf-63.0
