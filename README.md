@@ -11,13 +11,13 @@ Create the `/etc/portage/repos.conf/librewolf.conf` file as follows:
 ```
 [librewolf]
 priority = 50
-location = <repo-location>/librewolf
+location = /var/db/repos/librewolf
 sync-type = git
 sync-uri = https://codeberg.org/librewolf/gentoo.git
 auto-sync = Yes
 ```
 
-Change `repo-location` to a path of your choosing and then run `emerge --sync librewolf`, Portage should now find and update the repository.
+Then run `emaint sync -r librewolf`, Portage should now find and update the repository.
 
 ### Eselect way
 
@@ -27,15 +27,7 @@ On terminal:
 sudo eselect repository add librewolf git https://codeberg.org/librewolf/gentoo.git
 ```
 
-### Layman way
-
-On terminal:
-
-```bash
-sudo layman -o https://codeberg.org/librewolf/gentoo/raw/branch/master/repository.xml -f -a librewolf
-```
-
-And then run `emerge --sync librewolf`, Portage should now find and update the repository.
+And then run `emaint sync -r librewolf`, Portage should now find and update the repository.
 
 ## Contributing
 
