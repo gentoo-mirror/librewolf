@@ -21,5 +21,5 @@ www-client/librewolf:system-libvpx - Use the system-wide media-libs/libvpx inste
 www-client/librewolf:system-png - Use the system-wide media-libs/libpng instead of bundled (requires APNG patches)
 www-client/librewolf:system-python-libs - Use system's python site instead of bundled python libraries
 www-client/librewolf:system-webp - Use the system-wide media-libs/libwebp instead of bundled
-www-client/librewolf:wasm - Sandbox certain third-party libraries through WebAssembly using RLBox
+www-client/librewolf:wasm-sandbox - Sandbox certain third-party libraries through WebAssembly using RLBox
 www-client/librewolf:wifi - Enable necko-wifi for NetworkManager integration, and access point MAC address scanning for better precision with opt-in geolocation services
