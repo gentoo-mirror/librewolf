@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-133-patches-02.tar.xz"
+FIREFOX_PATCHSET="firefox-135-patches-02.tar.xz"
 
 LLVM_COMPAT=( 17 18 19 )
 
@@ -13,7 +13,7 @@ RUST_NEEDS_LLVM=1
 # If not building with clang we need at least rust 1.76
 RUST_MIN_VER=1.77.1
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{10..13} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.71"
@@ -24,10 +24,10 @@ VIRTUALX_REQUIRED="manual"
 # Used when cloning patches repository.
 LIBREWOLF_PV="${PV/_p/-}"
 
-# Information about the bundled wasm toolchain from
+# Information about the bundled wasi toolchain from
 # https://github.com/WebAssembly/wasi-sdk/
-WASI_SDK_VER=24.0
-WASI_SDK_LLVM_VER=18
+WASI_SDK_VER=25.0
+WASI_SDK_LLVM_VER=19
 
 MOZ_ESR=
 
@@ -53,7 +53,7 @@ MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
 MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
 inherit autotools check-reqs desktop flag-o-matic gnome2-utils linux-info llvm-r1 multiprocessing \
-	optfeature pax-utils python-any-r1 rust readme.gentoo-r1 toolchain-funcs virtualx xdg
+	optfeature pax-utils python-any-r1 readme.gentoo-r1 rust toolchain-funcs virtualx xdg
 
 MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases/${MOZ_PV}"
 
@@ -70,7 +70,7 @@ DESCRIPTION="LibreWolf Web Browser"
 HOMEPAGE="https://librewolf.net/"
 SRC_URI="${LIBREWOLF_SRC_URI} -> librewolf-${LIBREWOLF_PV}.source.tar.gz
 	${PATCH_URIS[@]}
-	wasm? (
+	wasm-sandbox? (
 		amd64? ( https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VER/.*/}/wasi-sdk-${WASI_SDK_VER}-x86_64-linux.tar.gz )
 		arm64? ( https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VER/.*/}/wasi-sdk-${WASI_SDK_VER}-arm64-linux.tar.gz )
 	)"
@@ -86,10 +86,16 @@ IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-jpeg +syst
 IUSE+=" +system-libvpx system-png +system-webp valgrind wayland wifi +X"
 
 # Firefox-only IUSE
-IUSE+=" +gmp-autoupdate +jumbo-build openh264 -telemetry wasm"
+IUSE+=" +gmp-autoupdate +jumbo-build openh264 -telemetry wasm-sandbox"
 
+# "wasm-sandbox? ( llvm_slot_19 )" - most likely due to wasi-sdk-25.0 being llvm-19 based, and
+# llvm/clang-19 turning on reference types for wasm targets. Luckily clang-19 is already stable in
+# Gentoo so it should be widely adopted already - however, it might be possible to workaround
+# the constraint simply by modifying CFLAGS when using clang-17/18. Will need to investigate (bmo#1905251)
 REQUIRED_USE="|| ( X wayland )
 	debug? ( !system-av1 )
+	pgo? ( jumbo-build )
+	wasm-sandbox? ( llvm_slot_19 )
 	wayland? ( dbus )
 	wifi? ( dbus )
 "
@@ -103,7 +109,7 @@ BDEPEND="${PYTHON_DEPS}
 			llvm-core/lld:${LLVM_SLOT}
 			pgo? ( llvm-runtimes/compiler-rt-sanitizers:${LLVM_SLOT}[profile] )
 		)
-		wasm? ( llvm-core/lld:${LLVM_SLOT} )
+		wasm-sandbox? ( llvm-core/lld:${LLVM_SLOT} )
 	')
 	app-alternatives/awk
 	app-arch/unzip
@@ -132,7 +138,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.106
+	>=dev-libs/nss-3.107
 	>=dev-libs/nspr-4.35
 	media-libs/alsa-lib
 	media-libs/fontconfig
@@ -164,7 +170,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	)
 	system-harfbuzz? (
 		>=media-libs/harfbuzz-2.8.1:0=
-		!wasm? ( >=media-gfx/graphite2-1.3.13 )
+		!wasm-sandbox? ( >=media-gfx/graphite2-1.3.13 )
 	)
 	system-icu? ( >=dev-libs/icu-73.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1:= )
@@ -457,7 +463,7 @@ pkg_pretend() {
 		elif tc-is-lto ; then
 			CHECKREQS_DISK_BUILD="10600M"
 		else
-			CHECKREQS_DISK_BUILD="6800M"
+			CHECKREQS_DISK_BUILD="7400M"
 		fi
 
 		check-reqs_pkg_pretend
@@ -495,7 +501,7 @@ pkg_setup() {
 		elif [[ ${use_lto} == "yes" ]] ; then
 			CHECKREQS_DISK_BUILD="10600M"
 		else
-			CHECKREQS_DISK_BUILD="6800M"
+			CHECKREQS_DISK_BUILD="7400M"
 		fi
 
 		check-reqs_pkg_setup
@@ -584,12 +590,6 @@ src_prepare() {
 		rm -v "${WORKDIR}"/firefox-patches/*-LTO-Only-enable-LTO-*.patch || die
 	fi
 
-	# Workaround for bgo#917599
-	if has_version ">=dev-libs/icu-74.1" && use system-icu ; then
-		eapply "${WORKDIR}"/firefox-patches/*-bmo-1862601-system-icu-74.patch
-	fi
-	rm -v "${WORKDIR}"/firefox-patches/*-bmo-1862601-system-icu-74.patch || die
-
 	# Workaround for bgo#915651 on musl
 	if use elibc_glibc ; then
 		rm -v "${WORKDIR}"/firefox-patches/*bgo-748849-RUST_TARGET_override.patch || die
@@ -624,14 +624,14 @@ src_prepare() {
 		fi
 	fi
 
-	# Pre-built wasm path manipulation.
-	if use wasm ; then
+	# Pre-built wasm-sandbox path manipulation.
+	if use wasm-sandbox ; then
 		if use amd64 ; then
 			export wasi_arch="x86_64"
 		elif use arm64 ; then
 			export wasi_arch="arm64"
 		else
-			die "wasm enabled on unknown/unsupported arch!"
+			die "wasm-sandbox enabled on unknown/unsupported arch!"
 		fi
 
 		sed -i \
@@ -935,15 +935,14 @@ src_configure() {
 		mozconfig_add_options_ac '+x11' --enable-default-toolkit=cairo-gtk3-x11-only
 	fi
 
-	# wasm
-	# Since graphite2 is one of the sandboxed libraries, system-graphite2 obviously can't work with +wasm.
-	if use wasm ; then
-		mozconfig_add_options_ac '+wasm' --with-wasi-sysroot="${WORKDIR}/wasi-sdk-${WASI_SDK_VER}-${wasi_arch}-linux/share/wasi-sysroot/"
+	# wasm-sandbox
+	# Since graphite2 is one of the sandboxed libraries, system-graphite2 obviously can't work with +wasm-sandbox.
+	if use wasm-sandbox ; then
+		mozconfig_add_options_ac '+wasm-sandbox' --with-wasi-sysroot="${WORKDIR}/wasi-sdk-${WASI_SDK_VER}-${wasi_arch}-linux/share/wasi-sysroot/"
 	else
 		mozconfig_add_options_ac 'no wasm-sandbox' --without-wasm-sandboxed-libraries
 		mozconfig_use_with system-harfbuzz system-graphite2
 	fi
-
 
 	if [[ ${use_lto} == "yes" ]] ; then
 		if use clang ; then
