@@ -33,8 +33,8 @@ inherit desktop linux-info optfeature pax-utils xdg
 MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases/${MOZ_PV}"
 
 SRC_URI="${SRC_URI}
-	amd64? ( https://gitlab.com/api/v4/projects/44042130/packages/generic/librewolf/${LIBREWOLF_PV}/librewolf-${LIBREWOLF_PV}-linux-x86_64-package.tar.bz2 )
-	arm64? ( https://gitlab.com/api/v4/projects/44042130/packages/generic/librewolf/${LIBREWOLF_PV}/librewolf-${LIBREWOLF_PV}-linux-arm64-package.tar.bz2 )"
+	amd64? ( https://gitlab.com/api/v4/projects/44042130/packages/generic/librewolf/${LIBREWOLF_PV}/librewolf-${LIBREWOLF_PV}-linux-x86_64-package.tar.xz )
+	arm64? ( https://gitlab.com/api/v4/projects/44042130/packages/generic/librewolf/${LIBREWOLF_PV}/librewolf-${LIBREWOLF_PV}-linux-arm64-package.tar.xz )"
 
 DESCRIPTION="LibreWolf Web Browser"
 HOMEPAGE="https://librewolf.net/"
