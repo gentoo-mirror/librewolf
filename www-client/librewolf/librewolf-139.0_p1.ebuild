@@ -3,10 +3,10 @@
 
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-138-patches-02.tar.xz"
+FIREFOX_PATCHSET="firefox-139-patches-03.tar.xz"
 FIREFOX_LOONG_PATCHSET="firefox-138-loong-patches-01.tar.xz"
 
-LLVM_COMPAT=( 19 )
+LLVM_COMPAT=( 19 20 )
 
 # This will also filter rust versions that don't match LLVM_COMPAT in the non-clang path; this is fine.
 RUST_NEEDS_LLVM=1
@@ -14,7 +14,7 @@ RUST_NEEDS_LLVM=1
 # If not building with clang we need at least rust 1.76
 RUST_MIN_VER=1.82.0
 
-PYTHON_COMPAT=( python3_{10..13} )
+PYTHON_COMPAT=( python3_{11..13} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 VIRTUALX_REQUIRED="manual"
@@ -51,7 +51,7 @@ MOZ_P="${MOZ_PN}-${MOZ_PV}"
 MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
 MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
 
-inherit autotools check-reqs desktop flag-o-matic gnome2-utils linux-info llvm-r1 multiprocessing \
+inherit check-reqs desktop flag-o-matic gnome2-utils linux-info llvm-r1 multiprocessing \
 	optfeature pax-utils python-any-r1 readme.gentoo-r1 rust toolchain-funcs virtualx xdg
 
 MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases/${MOZ_PV}"
@@ -85,19 +85,14 @@ RESTRICT="mirror"
 
 IUSE="+clang dbus debug eme-free +hardened hwaccel jack libproxy pgo pulseaudio sndio selinux"
 IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-jpeg +system-libevent"
-IUSE+=" +system-libvpx system-png +system-webp test valgrind wayland wifi +X"
+IUSE+=" +system-libvpx system-pipewire system-png +system-webp test valgrind wayland wifi +X"
 
 # Firefox-only IUSE
 IUSE+=" +gmp-autoupdate jpegxl +jumbo-build openh264 -telemetry wasm-sandbox"
 
-# "wasm-sandbox? ( llvm_slot_19 )" - most likely due to wasi-sdk-25.0 being llvm-19 based, and
-# llvm/clang-19 turning on reference types for wasm targets. Luckily clang-19 is already stable in
-# Gentoo so it should be widely adopted already - however, it might be possible to workaround
-# the constraint simply by modifying CFLAGS when using clang-17/18. Will need to investigate (bmo#1905251)
 REQUIRED_USE="|| ( X wayland )
 	debug? ( !system-av1 )
 	pgo? ( jumbo-build )
-	wasm-sandbox? ( llvm_slot_19 )
 	wayland? ( dbus )
 	wifi? ( dbus )
 "
@@ -116,7 +111,7 @@ BDEPEND="${PYTHON_DEPS}
 	app-alternatives/awk
 	app-arch/unzip
 	app-arch/zip
-	>=dev-util/cbindgen-0.28.0
+	>=dev-util/cbindgen-0.27.0
 	net-libs/nodejs
 	virtual/pkgconfig
 	amd64? ( >=dev-lang/nasm-2.14 )
@@ -151,6 +146,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	virtual/freedesktop-icon-theme
 	x11-libs/cairo
 	x11-libs/gdk-pixbuf:2
+	x11-libs/libdrm
 	x11-libs/pango
 	x11-libs/pixman
 	dbus? (
@@ -178,6 +174,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1:= )
 	system-libevent? ( >=dev-libs/libevent-2.1.12:0=[threads(+)] )
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
+	system-pipewire? ( media-video/pipewire:= )
 	system-png? ( >=media-libs/libpng-1.6.45:0=[apng] )
 	system-webp? ( >=media-libs/libwebp-1.1.0:0= )
 	valgrind? ( dev-debug/valgrind )
@@ -583,7 +580,7 @@ src_unpack() {
 
 src_prepare() {
 	# LibreWolf already has this I think.
-	rm -v "${WORKDIR}/firefox-patches/0023-bgo-928126-enable-jxl.patch"
+	rm -v "${WORKDIR}/firefox-patches/0021-bgo-928126-enable-jxl.patch"
 
 	if [[ ${use_lto} == "yes" ]]; then
 		rm -v "${WORKDIR}"/firefox-patches/*-LTO-Only-enable-LTO-*.patch || die
@@ -796,6 +793,7 @@ src_configure() {
 		--disable-wmf \
 		--enable-negotiateauth \
 		--enable-new-pass-manager \
+		--enable-packed-relative-relocs \
 		--enable-release \
 		--enable-system-policies \
 		--host="${CBUILD:-${CHOST}}" \
@@ -806,14 +804,14 @@ src_configure() {
 		--with-intl-api \
 		--with-libclang-path="$(llvm-config --libdir)" \
 		--with-system-ffi \
+		--with-system-gbm \
+		--with-system-libdrm \
 		--with-system-nspr \
 		--with-system-nss \
 		--with-system-pixman \
 		--with-system-zlib \
 		--with-toolchain-prefix="${CHOST}-" \
-		--with-unsigned-addon-scopes=app,system \
-		--x-includes="${ESYSROOT}/usr/include" \
-		--x-libraries="${ESYSROOT}/usr/$(get_libdir)"
+		--with-unsigned-addon-scopes=app,system
 
 	# Librewolf
 	mozconfig_add_options_ac 'LibreWolf Branding' \
@@ -905,6 +903,7 @@ src_configure() {
 	mozconfig_use_with system-jpeg
 	mozconfig_use_with system-libevent
 	mozconfig_use_with system-libvpx
+	mozconfig_use_with system-pipewire
 	mozconfig_use_with system-png
 	mozconfig_use_with system-webp
 
