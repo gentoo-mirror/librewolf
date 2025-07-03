@@ -81,14 +81,17 @@ LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 SLOT="0/$(ver_cut 1)"
 KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv ~x86"
 
-RESTRICT="mirror"
+RESTRICT="
+	mirror
+	!test? ( test )
+"
 
 IUSE="+clang dbus debug eme-free +hardened hwaccel jack libproxy pgo pulseaudio sndio selinux"
 IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-jpeg +system-libevent"
 IUSE+=" +system-libvpx system-png +system-webp test valgrind wayland wifi +X"
 
 # Firefox-only IUSE
-IUSE+=" +gmp-autoupdate jpegxl +jumbo-build openh264 -telemetry wasm-sandbox"
+IUSE+=" +gmp-autoupdate jpegxl +jumbo-build openh264 telemetry wasm-sandbox"
 
 # "wasm-sandbox? ( llvm_slot_19 )" - most likely due to wasi-sdk-25.0 being llvm-19 based, and
 # llvm/clang-19 turning on reference types for wasm targets. Luckily clang-19 is already stable in
