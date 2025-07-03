@@ -81,7 +81,10 @@ LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 SLOT="0/$(ver_cut 1)"
 KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv ~x86"
 
-RESTRICT="mirror"
+RESTRICT="
+	mirror
+	!test? ( test )
+"
 
 IUSE="+clang dbus debug eme-free +hardened hwaccel jack libproxy pgo pulseaudio sndio selinux"
 IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-jpeg +system-libevent"
