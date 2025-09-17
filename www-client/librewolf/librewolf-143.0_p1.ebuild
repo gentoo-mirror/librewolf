@@ -576,7 +576,7 @@ src_unpack() {
 
 src_prepare() {
 	# LibreWolf already has this I think.
-	rm -v "${WORKDIR}/firefox-patches/0021-bgo-928126-enable-jxl.patch"
+	rm -v "${WORKDIR}/firefox-patches/0020-bgo-928126-enable-jxl.patch"
 
 	if [[ ${use_lto} == "yes" ]]; then
 		rm -v "${WORKDIR}"/firefox-patches/*-LTO-Only-enable-LTO-*.patch || die
