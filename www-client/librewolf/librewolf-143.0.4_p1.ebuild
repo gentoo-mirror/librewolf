@@ -3,7 +3,7 @@
 
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-143-patches-01.tar.xz"
+FIREFOX_PATCHSET="firefox-143-patches-02.tar.xz"
 
 LLVM_COMPAT=( 19 20 )
 
@@ -160,7 +160,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 	sndio? ( >=media-sound/sndio-1.8.0-r1 )
 	system-av1? (
 		>=media-libs/dav1d-1.0.0:=
-		>=media-libs/libaom-1.0.0:=
+		>=media-libs/libaom-3.10.0:=
 	)
 	system-harfbuzz? (
 		>=media-libs/harfbuzz-2.8.1:0=
